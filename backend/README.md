@@ -14,6 +14,41 @@ Board-centric TODO API: boards and tasks with plural REST endpoints, command pat
 1. Start PostgreSQL (e.g. Docker: `docker run -d --name todo-db -e POSTGRES_DB=todo -e POSTGRES_USER=todo -e POSTGRES_PASSWORD=todo -p 5432:5432 postgres:16-alpine`)
 2. Run the app: `./gradlew bootRun`
 
+### With Docker Compose (PostgreSQL, Kafka, Debezium, Kafka UI)
+
+From the `backend` directory:
+
+1. Start infrastructure (PostgreSQL, Kafka broker, Kafka Connect with Debezium, Kafka UI):
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. Run the Spring Boot app:
+
+   ```bash
+   ./gradlew bootRun
+   ```
+
+3. Trigger outbox events using the existing REST API (for example, create/update/delete boards or tasks).
+4. The Debezium outbox connector writes to the Kafka topic `debezium.public.outbox`.
+5. The application consumes this topic and logs the outbox payload for each message. Look for log lines like:
+
+   ```
+   Outbox payload: {...}
+   ```
+
+   in the application console output.
+
+## Outbox event dataflow
+
+- **HTTP request**: Client calls a REST endpoint (for example, create/update/delete board or task).
+- **Command handler**: The controller turns the request into a command; the command handler persists the aggregate and, via `OutboxSupport`, creates an `outbox` row in PostgreSQL in the same transaction.
+- **PostgreSQL**: The `outbox` table holds the event payload as JSON.
+- **Debezium / Kafka Connect**: Debezium monitors the `outbox` table and publishes changes to the Kafka topic `debezium.public.outbox`.
+- **Kafka topic**: Each outbox row becomes a Kafka message (with `schema` + `payload` or plain JSON, depending on connector config).
+- **Spring consumer**: `OutboxKafkaConsumer` subscribes to `debezium.public.outbox`, extracts the `payload` from each message, and logs it to the application console.
+
 ### Default configuration
 
 The app expects PostgreSQL at `localhost:5432` with database `todo`, user `todo`, password `todo`. Adjust `src/main/resources/application.yaml` if needed.
