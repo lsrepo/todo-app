@@ -61,6 +61,7 @@ class DeleteTaskCommandHandlerTest {
 				eq("Task"),
 				eq(taskId.toString()),
 				eq("TaskDeleted"),
+				eq(boardId),
 				payloadCaptor.capture()
 		);
 
@@ -102,7 +103,7 @@ class DeleteTaskCommandHandlerTest {
 
 		assertThat(result).isFalse();
 		verify(taskRepository, never()).delete(Mockito.<Task>any());
-		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any());
+		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any(), any());
 	}
 }
 

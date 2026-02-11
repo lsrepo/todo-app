@@ -17,13 +17,14 @@ public class OutboxSupport {
 	private final OutboxRepository outboxRepository;
 	private final ObjectMapper objectMapper;
 
-	public void saveOutbox(String aggregateType, String aggregateId, String eventType, Object payload) {
+	public void saveOutbox(String aggregateType, String aggregateId, String eventType, UUID boardId, Object payload) {
 		try {
 			String payloadJson = objectMapper.writeValueAsString(payload);
 			OutboxEntry entry = OutboxEntry.builder()
 					.id(UUID.randomUUID())
 					.aggregateType(aggregateType)
 					.aggregateId(aggregateId)
+					.boardId(boardId)
 					.eventType(eventType)
 					.payload(payloadJson)
 					.createdAt(Instant.now())

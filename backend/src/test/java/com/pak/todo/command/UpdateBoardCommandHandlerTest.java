@@ -78,6 +78,7 @@ class UpdateBoardCommandHandlerTest {
 				eq("Board"),
 				eq(boardId.toString()),
 				eq("BoardUpdated"),
+				eq(boardId),
 				payloadCaptor.capture()
 		);
 
@@ -121,7 +122,7 @@ class UpdateBoardCommandHandlerTest {
 		assertThat(result).isNull();
 		verify(boardRepository, never()).save(any());
 		verifyNoInteractions(boardMapper);
-		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any());
+		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any(), any());
 	}
 }
 

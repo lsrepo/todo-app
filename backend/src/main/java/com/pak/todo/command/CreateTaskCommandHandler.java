@@ -50,7 +50,7 @@ public class CreateTaskCommandHandler {
 				.eventType("TaskCreated")
 				.occurredAt(Instant.now())
 				.build();
-		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskCreated", payload);
+		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskCreated", task.getBoard().getId(), payload);
 
 		return taskMapper.toResponse(task);
 	}

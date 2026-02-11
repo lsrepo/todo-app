@@ -47,6 +47,7 @@ class DeleteBoardCommandHandlerTest {
 				eq("Board"),
 				eq(boardId.toString()),
 				eq("BoardDeleted"),
+				eq(boardId),
 				payloadCaptor.capture()
 		);
 
@@ -83,7 +84,7 @@ class DeleteBoardCommandHandlerTest {
 
 		assertThat(result).isFalse();
 		verify(boardRepository, never()).delete(any());
-		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any());
+		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any(), any());
 	}
 }
 

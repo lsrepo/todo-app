@@ -1,22 +1,22 @@
 package com.pak.todo.command;
 
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.pak.todo.domain.command.CreateBoardCommand;
 import com.pak.todo.domain.event.BoardEventPayload;
 import com.pak.todo.model.dto.BoardResponse;
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.mapper.BoardMapper;
 import com.pak.todo.repository.BoardRepository;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class CreateBoardCommandHandlerTest {
 
@@ -72,6 +72,7 @@ class CreateBoardCommandHandlerTest {
 				eq("Board"),
 				eq(boardId.toString()),
 				eq("BoardCreated"),
+				eq(boardId),
 				payloadCaptor.capture()
 		);
 

@@ -34,7 +34,7 @@ public class CreateBoardCommandHandler {
 				.eventType("BoardCreated")
 				.occurredAt(Instant.now())
 				.build();
-		outboxSupport.saveOutbox("Board", board.getId().toString(), "BoardCreated", payload);
+		outboxSupport.saveOutbox("Board", board.getId().toString(), "BoardCreated", board.getId(), payload);
 
 		return boardMapper.toResponse(board);
 	}

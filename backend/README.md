@@ -47,7 +47,7 @@ From the `backend` directory:
 - **PostgreSQL**: The `outbox` table holds the event payload as JSON.
 - **Debezium / Kafka Connect**: Debezium monitors the `outbox` table and publishes changes to the Kafka topic `debezium.public.outbox`.
 - **Kafka topic**: Each outbox row becomes a Kafka message (with `schema` + `payload` or plain JSON, depending on connector config).
-- **Spring consumer**: `OutboxKafkaConsumer` subscribes to `debezium.public.outbox`, extracts the `payload` from each message, and logs it to the application console.
+- **Spring consumer**: `OutboxKafkaConsumer` subscribes to `debezium.public.outbox`, extracts each outbox row (including `board_id`), and broadcasts a concise message over WebSocket to any clients listening for that board.
 
 ### Default configuration
 
@@ -93,10 +93,47 @@ Task list supports query params: `status` (NOT_STARTED, IN_PROGRESS, COMPLETED),
 
 ## Documentation
 
-- **OpenAPI (Swagger)**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) when the app is running
-- **OpenAPI JSON**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- **OpenAPI (Swagger)**: [http://localhost:8088/swagger-ui.html](http://localhost:8088/swagger-ui.html) when the app is running
+- **OpenAPI JSON**: [http://localhost:8088/v3/api-docs](http://localhost:8088/v3/api-docs)
 
 You can import the OpenAPI JSON into Postman to get a collection.
+
+## WebSocket board stream
+
+- **Endpoint**: `ws://localhost:8088/ws/board/{boardId}`
+  - Replace `{boardId}` with the UUID of the board you want to listen to.
+  - Connecting to this URL subscribes the client to changes for that board.
+- **What you receive**: For any board or task change on that board, the client receives a single-line text message derived from the outbox event with the format:
+
+  ```text
+  type=<create|edit|delete>;resource=<board|task>;id=<uuid>;key=<field>;value=<value>
+  ```
+
+  - `type`: derived from the event type (e.g. `BoardCreated` → `create`, `TaskDeleted` → `delete`, others → `edit`).
+  - `resource`: `board` or `task` based on the aggregate type.
+  - `id`: the aggregate ID (board or task).
+  - `key`: typically the main field of interest (for tasks, `status` when present; otherwise `name`; for boards, `name`).
+  - `value`: the new value for that field, with `;` and `=` escaped as `\;` and `\=`.
+
+- **Example client (vanilla JS)**:
+
+  ```js
+  import Stomp from 'stompjs';
+
+  const boardId = '00000000-0000-0000-0000-000000000000';
+  const socket = new WebSocket('ws://localhost:8088/ws');
+  const stompClient = Stomp.over(socket);
+
+  stompClient.connect({}, () => {
+    console.log('Connected to STOMP board stream');
+
+    stompClient.subscribe(`/topic/boards/${boardId}`, (message) => {
+      console.log('Board stream message:', message.body);
+      // Example payload:
+      // type=create;resource=task;id=...;key=status;value=NOT_STARTED
+    });
+  });
+  ```
 
 ## Design
 

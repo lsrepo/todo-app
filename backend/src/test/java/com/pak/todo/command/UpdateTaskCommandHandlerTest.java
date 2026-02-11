@@ -1,5 +1,21 @@
 package com.pak.todo.command;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.pak.todo.domain.command.UpdateTaskCommand;
 import com.pak.todo.domain.event.TaskEventPayload;
 import com.pak.todo.model.dto.TaskResponse;
@@ -8,22 +24,6 @@ import com.pak.todo.model.entity.Task;
 import com.pak.todo.model.enums.TaskStatus;
 import com.pak.todo.model.mapper.TaskMapper;
 import com.pak.todo.repository.TaskRepository;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 class UpdateTaskCommandHandlerTest {
 
@@ -99,6 +99,7 @@ class UpdateTaskCommandHandlerTest {
 				eq("Task"),
 				eq(taskId.toString()),
 				eq("TaskUpdated"),
+				eq(boardId),
 				payloadCaptor.capture()
 		);
 
@@ -202,7 +203,7 @@ class UpdateTaskCommandHandlerTest {
 		assertThat(result).isNull();
 		verify(taskRepository, never()).save(any());
 		verifyNoInteractions(taskMapper);
-		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any());
+		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any(), any());
 	}
 }
 

@@ -31,7 +31,7 @@ public class DeleteBoardCommandHandler {
 				.eventType("BoardDeleted")
 				.occurredAt(Instant.now())
 				.build();
-		outboxSupport.saveOutbox("Board", board.getId().toString(), "BoardDeleted", payload);
+		outboxSupport.saveOutbox("Board", board.getId().toString(), "BoardDeleted", board.getId(), payload);
 
 		boardRepository.delete(board);
 		return true;

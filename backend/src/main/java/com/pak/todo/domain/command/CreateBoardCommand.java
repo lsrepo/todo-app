@@ -1,12 +1,13 @@
 package com.pak.todo.domain.command;
 
+import java.util.UUID;
+
 import com.pak.todo.model.dto.BoardCreateRequest;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor

@@ -39,7 +39,7 @@ public class UpdateBoardCommandHandler {
 				.eventType("BoardUpdated")
 				.occurredAt(Instant.now())
 				.build();
-		outboxSupport.saveOutbox("Board", board.getId().toString(), "BoardUpdated", payload);
+		outboxSupport.saveOutbox("Board", board.getId().toString(), "BoardUpdated", board.getId(), payload);
 
 		return boardMapper.toResponse(board);
 	}

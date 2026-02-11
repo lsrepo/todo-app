@@ -1,16 +1,18 @@
 package com.pak.todo.service;
 
-import com.pak.todo.model.dto.BoardResponse;
-import com.pak.todo.model.entity.Board;
-import com.pak.todo.repository.BoardRepository;
-import com.pak.todo.model.mapper.BoardMapper;
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import com.pak.todo.model.dto.BoardResponse;
+import com.pak.todo.model.entity.Board;
+import com.pak.todo.model.mapper.BoardMapper;
+import com.pak.todo.repository.BoardRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

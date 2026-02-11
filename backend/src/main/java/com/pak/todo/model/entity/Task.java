@@ -1,6 +1,10 @@
 package com.pak.todo.model.entity;
 
+import java.time.Instant;
+import java.util.UUID;
+
 import com.pak.todo.model.enums.TaskStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,9 +19,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "tasks")

@@ -1,0 +1,40 @@
+---
+description: Documenting unit and integration test intent and style for Java tests
+globs: src/test/java/**/*.java, src/integrationTest/java/**/*.java
+alwaysApply: false
+---
+
+# Unit and integration test documentation and style
+
+## Test location and naming
+
+- All test classes must mirror the main source package structure.
+- **Unit tests:** For every class in `src/main/java/com/pak/todo/...`, the corresponding test class must be placed in `src/test/java/com/pak/todo/...` with the same package and the suffix `Test`.
+  - Example: `com.pak.todo.command.CreateTaskCommandHandler` → `com.pak.todo.command.CreateTaskCommandHandlerTest` in `src/test/java`.
+- **Integration tests:** Place in `src/integrationTest/java/com/pak/todo/...` with the same package and the suffix `IT` (e.g. `LastWriteWinsIT`).
+
+## Describing test intent
+
+- Every test method (unit and integration) MUST have:
+  - A clear, descriptive method name following the pattern `methodName_condition_expectedResult`, e.g. `handle_existingBoard_createsTaskAndOutbox`.
+  - A short comment block immediately above the method that explains the scenario in plain English using a consistent format:
+
+```java
+// Scenario: successfully creates a task for an existing board
+// Given: a valid CreateTaskCommand with an existing boardId
+// When: handle() is called
+// Then: a Task is saved, an outbox TaskCreated event is recorded, and a TaskResponse is returned
+@Test
+void handle_existingBoard_createsTaskAndOutbox() {
+  // ...
+}
+```
+
+- The comment should focus on the business behavior (the "why" and observable outcome), not implementation details of the test.
+
+## Annotation usage
+
+- **Unit tests:** Use only the minimal required annotations: `@Test` on test methods, and a single class-level test extension if needed (e.g. `@ExtendWith(MockitoExtension.class)`).
+- **Integration tests:** Use `@Test` on test methods plus any required framework annotations (e.g. `@SpringBootTest`, `@Testcontainers`). The same Scenario/Given/When/Then comment block applies.
+- Avoid optional annotations such as `@DisplayName`, `@Nested`, or custom intent-encoding annotations; test names and comment blocks are the primary way to express intent.
+

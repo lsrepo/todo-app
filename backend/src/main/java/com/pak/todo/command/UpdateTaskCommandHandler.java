@@ -46,7 +46,7 @@ public class UpdateTaskCommandHandler {
 				.eventType("TaskUpdated")
 				.occurredAt(Instant.now())
 				.build();
-		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskUpdated", payload);
+		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskUpdated", task.getBoard().getId(), payload);
 
 		return taskMapper.toResponse(task);
 	}

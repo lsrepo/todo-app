@@ -1,22 +1,24 @@
 package com.pak.todo.service;
 
-import com.pak.todo.model.dto.TaskResponse;
-import com.pak.todo.model.entity.Task;
-import com.pak.todo.model.enums.TaskStatus;
-import com.pak.todo.repository.TaskRepository;
-import com.pak.todo.model.mapper.TaskMapper;
-import jakarta.persistence.criteria.Predicate;
-import lombok.RequiredArgsConstructor;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import com.pak.todo.model.dto.TaskResponse;
+import com.pak.todo.model.entity.Task;
+import com.pak.todo.model.enums.TaskStatus;
+import com.pak.todo.model.mapper.TaskMapper;
+import com.pak.todo.repository.TaskRepository;
+
+import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

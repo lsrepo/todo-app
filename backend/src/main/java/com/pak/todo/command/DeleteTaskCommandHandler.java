@@ -34,7 +34,7 @@ public class DeleteTaskCommandHandler {
 				.eventType("TaskDeleted")
 				.occurredAt(Instant.now())
 				.build();
-		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskDeleted", payload);
+		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskDeleted", task.getBoard().getId(), payload);
 
 		taskRepository.delete(task);
 		return true;

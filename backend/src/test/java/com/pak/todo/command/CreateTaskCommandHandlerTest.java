@@ -79,6 +79,7 @@ class CreateTaskCommandHandlerTest {
 				eq("Task"),
 				eq(taskId.toString()),
 				eq("TaskCreated"),
+				eq(boardId),
 				payloadCaptor.capture()
 		);
 
@@ -137,7 +138,7 @@ class CreateTaskCommandHandlerTest {
 		assertThat(result).isNull();
 		verify(taskRepository, never()).save(any());
 		verifyNoInteractions(taskMapper);
-		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any());
+		verify(outboxSupport, never()).saveOutbox(any(), any(), any(),any(), any());
 	}
 }
 

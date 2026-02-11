@@ -34,6 +34,9 @@ public class OutboxEntry {
 	@Column(name = "aggregate_id", nullable = false)
 	private String aggregateId;
 
+	@Column(name = "board_id", nullable = false)
+	private UUID boardId;
+
 	@Column(name = "event_type", nullable = false)
 	private String eventType;
 
