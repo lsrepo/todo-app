@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: todo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    shm_size: 128mb
+

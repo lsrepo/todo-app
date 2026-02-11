@@ -1,0 +1,40 @@
+---
+description: Documenting unit test intent and style for Java tests
+globs: src/test/java/**/*.java
+alwaysApply: false
+---
+
+# Unit test documentation and style
+
+## Test location and naming
+
+- All unit test classes must mirror the main source package structure.
+- For every class in `src/main/java/com/pak/todo/...`, the corresponding test class must be placed in `src/test/java/com/pak/todo/...` with the same package and the suffix `Test`.
+- Example: `com.pak.todo.command.CreateTaskCommandHandler` → `com.pak.todo.command.CreateTaskCommandHandlerTest` in `src/test/java`.
+
+## Describing test intent
+
+- Every test method MUST have:
+  - A clear, descriptive method name following the pattern `methodName_condition_expectedResult`, e.g. `handle_existingBoard_createsTaskAndOutbox`.
+  - A short comment block immediately above the method that explains the scenario in plain English using a consistent format:
+
+```java
+// Scenario: successfully creates a task for an existing board
+// Given: a valid CreateTaskCommand with an existing boardId
+// When: handle() is called
+// Then: a Task is saved, an outbox TaskCreated event is recorded, and a TaskResponse is returned
+@Test
+void handle_existingBoard_createsTaskAndOutbox() {
+  // ...
+}
+```
+
+- The comment should focus on the business behavior (the “why” and observable outcome), not implementation details of the test.
+
+## Annotation usage
+
+- Use only the minimal required annotations in tests:
+  - `@Test` on test methods.
+  - A single class-level test extension annotation if needed (for example, `@ExtendWith(MockitoExtension.class)`).
+- Avoid optional annotations such as `@DisplayName`, `@Nested`, or custom intent-encoding annotations; test names and comment blocks are the primary way to express intent.
+
