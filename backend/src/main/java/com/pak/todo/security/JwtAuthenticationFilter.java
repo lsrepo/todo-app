@@ -59,5 +59,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		filterChain.doFilter(request, response);
 	}
+
+	/**
+	 * Skip JWT authentication for WebSocket handshake requests.
+	 * The WebSocket handshake is authenticated separately via {@link com.pak.todo.websocket.JwtHandshakeInterceptor}.
+	 */
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+		String path = request.getServletPath();
+		// All WebSocket endpoints are under /ws/**
+		return path != null && path.startsWith("/ws/");
+	}
 }
 
