@@ -6,6 +6,7 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 import com.pak.todo.websocket.BoardWebSocketHandler;
+import com.pak.todo.websocket.JwtHandshakeInterceptor;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,11 +16,13 @@ import lombok.RequiredArgsConstructor;
 public class WebSocketConfig implements WebSocketConfigurer {
 
 	private final BoardWebSocketHandler boardWebSocketHandler;
+	private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
 
 	@Override
 	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
 		// Clients connect to ws://<host>:<port>/ws/board/{boardId}
 		registry.addHandler(boardWebSocketHandler, "/ws/board/*")
+				.addInterceptors(jwtHandshakeInterceptor)
 				.setAllowedOrigins("*");
 	}
 }

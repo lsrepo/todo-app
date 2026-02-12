@@ -5,10 +5,15 @@ import com.pak.todo.command.CreateTaskCommandHandler;
 import com.pak.todo.command.DeleteTaskCommandHandler;
 import com.pak.todo.command.UpdateTaskCommandHandler;
 import com.pak.todo.model.dto.TaskCreateRequest;
+import com.pak.todo.auth.AuthorizationService;
+import com.pak.todo.security.CurrentUserService;
+import com.pak.todo.service.BoardService;
 import com.pak.todo.service.TaskService;
+import com.pak.todo.security.JwtAuthenticationFilter;
 import com.pak.todo.web.error.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -23,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(TaskController.class)
 @Import(GlobalExceptionHandler.class)
 class TaskControllerValidationTest {
@@ -37,6 +43,15 @@ class TaskControllerValidationTest {
 	private TaskService taskService;
 
 	@MockBean
+	private BoardService boardService;
+
+	@MockBean
+	private AuthorizationService authorizationService;
+
+	@MockBean
+	private CurrentUserService currentUserService;
+
+	@MockBean
 	private CreateTaskCommandHandler createTaskCommandHandler;
 
 	@MockBean
@@ -44,6 +59,9 @@ class TaskControllerValidationTest {
 
 	@MockBean
 	private DeleteTaskCommandHandler deleteTaskCommandHandler;
+
+	@MockBean
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	// Scenario: creating a task with description longer than allowed
 	// Given: a TaskCreateRequest with a valid name and a description over 2000 characters

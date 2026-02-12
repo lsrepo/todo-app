@@ -8,6 +8,11 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.pak.todo.auth.AuthorizationService;
+import com.pak.todo.model.entity.Board;
+import com.pak.todo.model.entity.User;
+import com.pak.todo.service.BoardService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 public class BoardWebSocketHandler extends TextWebSocketHandler {
 
 	private final WebSocketBroadcaster webSocketBroadcaster;
+	private final BoardService boardService;
+	private final AuthorizationService authorizationService;
 
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -27,7 +34,25 @@ public class BoardWebSocketHandler extends TextWebSocketHandler {
 			return;
 		}
 
-		// TODO: integrate authentication/authorization when security is added
+		Object principal = session.getAttributes().get("user");
+		if (!(principal instanceof User user)) {
+			log.warn("WebSocket connection missing authenticated user for board {}", boardId);
+			session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Unauthorized"));
+			return;
+		}
+
+		Board board = boardService.getEntityById(boardId);
+		if (board == null) {
+			log.warn("WebSocket connection for non-existent board {}", boardId);
+			session.close(CloseStatus.BAD_DATA);
+			return;
+		}
+
+		if (!authorizationService.canViewBoard(user, board)) {
+			log.warn("WebSocket connection forbidden for user {} on board {}", user.getId(), boardId);
+			session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Forbidden"));
+			return;
+		}
 
 		webSocketBroadcaster.register(boardId, session);
 		log.info("WebSocket session {} registered for board {}", session.getId(), boardId);

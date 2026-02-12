@@ -31,6 +31,12 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 server:
   port: 8088
+security:
+  jwt:
+    # Development-only secret key. Must be at least 256 bits for HS256.
+    secret: "change-me-in-production-change-me-in-production-1234"
+    expiration-seconds: 2592000
+    issuer: "todo-app"
 ---
 spring:
   config:
