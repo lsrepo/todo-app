@@ -4,17 +4,10 @@ Board-centric TODO API: boards and tasks with plural REST endpoints, command pat
 
 ## Prerequisites
 
-- Java 25
-- Docker (optional, for running PostgreSQL locally)
+- Java 21
+- Docker
 
 ## Running the application
-
-### With local PostgreSQL
-
-1. Start PostgreSQL (e.g. Docker: `docker run -d --name todo-db -e POSTGRES_DB=todo -e POSTGRES_USER=todo -e POSTGRES_PASSWORD=todo -p 5432:5432 postgres:16-alpine`)
-2. Run the app: `./gradlew bootRun`
-
-### With Docker Compose (PostgreSQL, Kafka, Debezium, Kafka UI)
 
 From the `backend` directory:
 
@@ -24,21 +17,17 @@ From the `backend` directory:
    docker compose up -d
    ```
 
-2. Run the Spring Boot app:
+2. Run the Spring Boot app (creates the schema and runs the seeder; the Debezium connector needs the `outbox` table to exist):
 
    ```bash
    ./gradlew bootRun
    ```
 
-3. Trigger outbox events using the existing REST API (for example, create/update/delete boards or tasks).
-4. The Debezium outbox connector writes to the Kafka topic `debezium.public.outbox`.
-5. The application consumes this topic and logs the outbox payload for each message. Look for log lines like:
+3. Register the Debezium PostgreSQL connector (run this *after* the app has started, since the Boot app creates the tables and seeding):
 
+   ```bash
+   ./scripts/setup-debezium.sh
    ```
-   Outbox payload: {...}
-   ```
-
-   in the application console output.
 
 ## Outbox event dataflow
 
@@ -49,54 +38,19 @@ From the `backend` directory:
 - **Kafka topic**: Each outbox row becomes a Kafka message (with `schema` + `payload` or plain JSON, depending on connector config).
 - **Spring consumer**: `OutboxKafkaConsumer` subscribes to `debezium.public.outbox`, extracts each outbox row (including `board_id`), and broadcasts a concise message over WebSocket to any clients listening for that board.
 
-### Default configuration
+## Testing
 
-The app expects PostgreSQL at `localhost:5432` with database `todo`, user `todo`, password `todo`. Adjust `src/main/resources/application.yaml` if needed.
+**Strategy:** Tests live in two source sets. **`src/test`** holds unit and slice tests (suffix `Test`): plain unit tests with mocks (command handlers, services, auth), and controller slice tests with `@WebMvcTest` (HTTP behaviour, validation, error responses). **`src/integrationTest`** holds full-context tests (suffix `IT`): `@SpringBootTest` with Testcontainers (PostgreSQL, optionally Kafka) to exercise real wiring and persistence. Slice tests stay in `src/test` so they run with the fast unit suite; only tests that need the full application context go in `src/integrationTest`.
 
-## Running tests
+### Running the tests
 
+- **Unit tests** (`./gradlew test`): Command handlers, services, auth, controllers (including validation). Mocks or `@WebMvcTest`; no real DB. Fast.
 
-### Run only unit tests
-
-```bash
-./gradlew test
-```
-
-### Run only integration tests
-
-```bash
-./gradlew integrationTest
-```
-
-Tests use Testcontainers to start a PostgreSQL container (requires Docker).
-
-### What each type of test focuses on
-
-- **Unit tests (`src/test/java`)**
-  - Focus on **in-process business logic**: command handlers, services, domain behavior.
-  - Use mocks for repositories/mappers where needed.
-  - Fast, no Spring context or real database required.
-
-- **Integration tests (`src/integrationTest/java`)**
-  - Focus on **application wiring and external contracts**:
-    - HTTP endpoints, request/response mapping, validation, and error formats (e.g. `TaskControllerValidationTest`).
-    - Interaction with infrastructure like the database via Spring/JPA (when using `@SpringBootTest` + Testcontainers).
-  - Slower than unit tests, but give confidence that the app behaves correctly from the outside.
+- **Integration tests** (`./gradlew integrationTest`): Full app with Testcontainers (Docker required). End-to-end flows and persistence. Slower.
 
 ## API
 
-- **Base path**: `/api`
-- **Boards**: `GET /api/boards`, `POST /api/boards`, `GET /api/boards/{boardId}`, `PUT /api/boards/{boardId}`, `DELETE /api/boards/{boardId}`
-- **Tasks** (scoped by board): `GET /api/boards/{boardId}/tasks`, `POST /api/boards/{boardId}/tasks`, `GET /api/boards/{boardId}/tasks/{taskId}`, `PUT /api/boards/{boardId}/tasks/{taskId}`, `DELETE /api/boards/{boardId}/tasks/{taskId}`
-
-Task list supports query params: `status` (NOT_STARTED, IN_PROGRESS, COMPLETED), `dueFrom`, `dueTo`, and Spring `Pageable` (`sort`, `page`, `size`).
-
-## Documentation
-
-- **OpenAPI (Swagger)**: [http://localhost:8088/swagger-ui.html](http://localhost:8088/swagger-ui.html) when the app is running
-- **OpenAPI JSON**: [http://localhost:8088/v3/api-docs](http://localhost:8088/v3/api-docs)
-
-You can import the OpenAPI JSON into Postman to get a collection.
+The API is documented in Swagger when the app is running: [Swagger UI](http://localhost:8088/swagger-ui.html), [OpenAPI JSON](http://localhost:8088/v3/api-docs). You can import the OpenAPI JSON into Postman to get a collection.
 
 ## WebSocket board stream
 
@@ -115,28 +69,12 @@ You can import the OpenAPI JSON into Postman to get a collection.
   - `key`: typically the main field of interest (for tasks, `status` when present; otherwise `name`; for boards, `name`).
   - `value`: the new value for that field, with `;` and `=` escaped as `\;` and `\=`.
 
-- **Example client (vanilla JS)**:
+## TODO in the future
 
-  ```js
-  import Stomp from 'stompjs';
-
-  const boardId = '00000000-0000-0000-0000-000000000000';
-  const socket = new WebSocket('ws://localhost:8088/ws');
-  const stompClient = Stomp.over(socket);
-
-  stompClient.connect({}, () => {
-    console.log('Connected to STOMP board stream');
-
-    stompClient.subscribe(`/topic/boards/${boardId}`, (message) => {
-      console.log('Board stream message:', message.body);
-      // Example payload:
-      // type=create;resource=task;id=...;key=status;value=NOT_STARTED
-    });
-  });
-  ```
+- Set up indices (e.g. for `outbox`, boards, tasks as needed).
 
 ## Design
 
 - **Commands**: Create/Update/Delete operations are implemented as commands; handlers persist the entity and an outbox row in the same transaction.
 - **Outbox**: Events are stored in the `outbox` table (no processor or WebSocket in this version).
-- **Mapping**: Request DTO → Command via static factory on the command; entity → response DTO via `BoardMapper` / `TaskMapper`.
+- **Mapping**: Request DTO → Command via command factories in the web layer (`BoardCommandFactory`, `TaskCommandFactory`); entity → response DTO via `BoardMapper` / `TaskMapper`.

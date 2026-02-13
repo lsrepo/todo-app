@@ -4,6 +4,10 @@ import com.pak.todo.model.dto.LoginRequest;
 import com.pak.todo.model.dto.LoginResponse;
 import com.pak.todo.security.AppUserDetails;
 import com.pak.todo.security.JwtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Auth", description = "Authentication")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -25,6 +30,11 @@ public class AuthController {
 	private final AuthenticationManager authenticationManager;
 	private final JwtService jwtService;
 
+	@Operation(summary = "Login and obtain JWT")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Login successful, returns token"),
+			@ApiResponse(responseCode = "401", description = "Invalid credentials")
+	})
 	@PostMapping("/login")
 	public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
 		try {

@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,10 @@ class WebSocketBroadcasterTest {
 		return session;
 	}
 
+	// Scenario: broadcasting to a board with multiple sessions sends message to all
+	// Given: two sessions registered for the same board
+	// When: broadcast(boardId, entry) is called
+	// Then: both sessions receive the formatted message
 	@Test
 	void broadcast_multipleSessionsOnSameBoard_sendsToAll() throws IOException {
 		UUID boardA = UUID.randomUUID();
@@ -67,6 +72,10 @@ class WebSocketBroadcasterTest {
 		verify(session2).sendMessage(any(TextMessage.class));
 	}
 
+	// Scenario: broadcasting to one board does not send to sessions on another board
+	// Given: sessions registered for board A and board B
+	// When: broadcast(boardA, entry) is called
+	// Then: only board A sessions receive the message
 	@Test
 	void broadcast_differentBoards_onlyBoardASessionsReceive() throws IOException {
 		UUID boardA = UUID.randomUUID();
@@ -84,6 +93,10 @@ class WebSocketBroadcasterTest {
 		verify(client3, never()).sendMessage(any(TextMessage.class));
 	}
 
+	// Scenario: closed sessions are skipped and do not receive messages
+	// Given: one open and one closed session registered for the same board
+	// When: broadcast is called
+	// Then: only the open session receives the message
 	@Test
 	void broadcast_closedSession_skipped() throws IOException {
 		UUID boardId = UUID.randomUUID();
@@ -97,6 +110,10 @@ class WebSocketBroadcasterTest {
 		verify(closed, never()).sendMessage(any(TextMessage.class));
 	}
 
+	// Scenario: after unregistering a session only remaining sessions receive broadcast
+	// Given: two sessions registered, then one unregistered
+	// When: broadcast is called
+	// Then: only the still-registered session receives the message
 	@Test
 	void broadcast_afterUnregister_onlyRemainingSessionReceives() throws IOException {
 		UUID boardA = UUID.randomUUID();
@@ -111,6 +128,10 @@ class WebSocketBroadcasterTest {
 		verify(session2, never()).sendMessage(any(TextMessage.class));
 	}
 
+	// Scenario: unregistering an unknown session does not throw
+	// Given: a session that was never registered
+	// When: unregister(session) and then broadcast for another board are called
+	// Then: no exception is thrown and the session receives nothing
 	@Test
 	void unregister_unknownSession_doesNotThrow() throws IOException {
 		WebSocketSession session = openSession("orphan");
@@ -121,6 +142,10 @@ class WebSocketBroadcasterTest {
 		verify(session, never()).sendMessage(any(TextMessage.class));
 	}
 
+	// Scenario: broadcasting to a board with no registered sessions does nothing
+	// Given: sessions registered for a different board only
+	// When: broadcast(targetBoardId, entry) is called
+	// Then: no session receives a message
 	@Test
 	void broadcast_noSessionsForBoard_doesNothing() throws IOException {
 		UUID boardA = UUID.randomUUID();
@@ -131,6 +156,10 @@ class WebSocketBroadcasterTest {
 		verify(session, never()).sendMessage(any(TextMessage.class));
 	}
 
+	// Scenario: broadcast message content uses formatter output with type, resource, id, key, value
+	// Given: an outbox entry with task updated and status in payload
+	// When: broadcast is called
+	// Then: the session receives a TextMessage whose payload contains the expected key-value format
 	@Test
 	void broadcast_messageContent_containsExpectedFormat() throws IOException {
 		UUID boardA = UUID.randomUUID();
@@ -147,5 +176,25 @@ class WebSocketBroadcasterTest {
 		assertThat(payload).contains("id=task-99");
 		assertThat(payload).contains("key=status");
 		assertThat(payload).contains("value=IN_PROGRESS");
+	}
+
+	// Scenario: when one session throws IOException on sendMessage others still receive and no exception propagates
+	// Given: two sessions registered for the same board, first session throws IOException on sendMessage
+	// When: broadcast is called
+	// Then: the other session receives the message and no exception is thrown
+	@Test
+	void broadcast_sendThrowsIOException_continuesToOtherSessions() throws IOException {
+		UUID boardId = UUID.randomUUID();
+		WebSocketSession failingSession = openSession("fail");
+		WebSocketSession okSession = openSession("ok");
+		doThrow(new IOException("send failed")).when(failingSession).sendMessage(any(TextMessage.class));
+		broadcaster.register(boardId, failingSession);
+		broadcaster.register(boardId, okSession);
+		OutboxEntry entry = entry(boardId, "Task", "t1", "TaskUpdated", "{\"name\":\"x\"}");
+
+		broadcaster.broadcast(boardId, entry);
+
+		verify(okSession).sendMessage(any(TextMessage.class));
+		verify(failingSession).sendMessage(any(TextMessage.class));
 	}
 }

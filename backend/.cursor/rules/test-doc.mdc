@@ -11,7 +11,7 @@ alwaysApply: false
 - All test classes must mirror the main source package structure.
 - **Unit tests:** For every class in `src/main/java/com/pak/todo/...`, the corresponding test class must be placed in `src/test/java/com/pak/todo/...` with the same package and the suffix `Test`.
   - Example: `com.pak.todo.command.CreateTaskCommandHandler` → `com.pak.todo.command.CreateTaskCommandHandlerTest` in `src/test/java`.
-- **Integration tests:** Place in `src/integrationTest/java/com/pak/todo/...` with the same package and the suffix `IT` (e.g. `LastWriteWinsIT`).
+- **Integration tests:** Place in `src/integrationTest/java/com/pak/todo/...` with the same package and the suffix `IT` (e.g. `LastWriteWinsIT`). Reserve this source set for tests that need full application context (e.g. `@SpringBootTest`, Testcontainers). Slice tests (e.g. `@WebMvcTest`, `@DataJpaTest`) belong in `src/test` with the suffix `Test`, not in integrationTest.
 
 ## Describing test intent
 

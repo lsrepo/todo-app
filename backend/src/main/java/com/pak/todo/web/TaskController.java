@@ -3,6 +3,10 @@ package com.pak.todo.web;
 import java.time.Instant;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -23,14 +27,13 @@ import com.pak.todo.auth.AuthorizationService;
 import com.pak.todo.command.CreateTaskCommandHandler;
 import com.pak.todo.command.DeleteTaskCommandHandler;
 import com.pak.todo.command.UpdateTaskCommandHandler;
-import com.pak.todo.domain.command.CreateTaskCommand;
-import com.pak.todo.domain.command.UpdateTaskCommand;
 import com.pak.todo.model.dto.TaskCreateRequest;
 import com.pak.todo.model.dto.TaskResponse;
 import com.pak.todo.model.dto.TaskUpdateRequest;
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.User;
 import com.pak.todo.model.enums.TaskStatus;
+import com.pak.todo.web.command.TaskCommandFactory;
 import com.pak.todo.security.CurrentUserService;
 import com.pak.todo.service.BoardService;
 import com.pak.todo.service.TaskService;
@@ -39,12 +42,14 @@ import com.pak.todo.web.error.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "Tasks", description = "Task CRUD scoped by board")
 @RestController
 @RequestMapping("/api/boards/{boardId}/tasks")
 @RequiredArgsConstructor
 public class TaskController {
 
 	private final TaskService taskService;
+	private final TaskCommandFactory taskCommandFactory;
 	private final CreateTaskCommandHandler createTaskCommandHandler;
 	private final UpdateTaskCommandHandler updateTaskCommandHandler;
 	private final DeleteTaskCommandHandler deleteTaskCommandHandler;
@@ -52,6 +57,12 @@ public class TaskController {
 	private final AuthorizationService authorizationService;
 	private final CurrentUserService currentUserService;
 
+	@Operation(summary = "List tasks for a board")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Paginated list of tasks"),
+			@ApiResponse(responseCode = "403", description = "Access denied"),
+			@ApiResponse(responseCode = "404", description = "Board not found")
+	})
 	@GetMapping
 	public Page<TaskResponse> list(
 			@PathVariable UUID boardId,
@@ -73,6 +84,12 @@ public class TaskController {
 		return taskService.findByBoardId(boardId, status, dueFrom, dueTo, pageable);
 	}
 
+	@Operation(summary = "Get a task by ID")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Task found"),
+			@ApiResponse(responseCode = "403", description = "Access denied"),
+			@ApiResponse(responseCode = "404", description = "Board or task not found")
+	})
 	@GetMapping("/{taskId}")
 	public TaskResponse get(@PathVariable UUID boardId, @PathVariable UUID taskId) {
 		Board board = boardService.getEntityById(boardId);
@@ -92,6 +109,13 @@ public class TaskController {
 		return response;
 	}
 
+	@Operation(summary = "Create a task")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "Task created"),
+			@ApiResponse(responseCode = "400", description = "Validation failed"),
+			@ApiResponse(responseCode = "403", description = "Access denied"),
+			@ApiResponse(responseCode = "404", description = "Board not found")
+	})
 	@PostMapping
 	public ResponseEntity<TaskResponse> create(
 			@PathVariable UUID boardId,
@@ -107,14 +131,20 @@ public class TaskController {
 			throw new org.springframework.security.access.AccessDeniedException("Access denied to board " + boardId);
 		}
 
-		CreateTaskCommand command = CreateTaskCommand.from(boardId, request);
-		TaskResponse response = createTaskCommandHandler.handle(command);
+		TaskResponse response = createTaskCommandHandler.handle(taskCommandFactory.createTask(boardId, request));
 		if (response == null) {
 			throw new ResourceNotFoundException("Board not found: " + boardId);
 		}
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
+	@Operation(summary = "Update a task")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Task updated"),
+			@ApiResponse(responseCode = "400", description = "Validation failed"),
+			@ApiResponse(responseCode = "403", description = "Access denied"),
+			@ApiResponse(responseCode = "404", description = "Board or task not found")
+	})
 	@PutMapping("/{taskId}")
 	public TaskResponse update(
 			@PathVariable UUID boardId,
@@ -131,14 +161,19 @@ public class TaskController {
 			throw new org.springframework.security.access.AccessDeniedException("Access denied to board " + boardId);
 		}
 
-		UpdateTaskCommand command = UpdateTaskCommand.from(boardId, taskId, request);
-		TaskResponse response = updateTaskCommandHandler.handle(command);
+		TaskResponse response = updateTaskCommandHandler.handle(taskCommandFactory.updateTask(boardId, taskId, request));
 		if (response == null) {
 			throw new ResourceNotFoundException("Task not found: " + taskId);
 		}
 		return response;
 	}
 
+	@Operation(summary = "Delete a task")
+	@ApiResponses({
+			@ApiResponse(responseCode = "204", description = "Task deleted"),
+			@ApiResponse(responseCode = "403", description = "Access denied"),
+			@ApiResponse(responseCode = "404", description = "Board or task not found")
+	})
 	@DeleteMapping("/{taskId}")
 	public ResponseEntity<Void> delete(@PathVariable UUID boardId, @PathVariable UUID taskId) {
 		Board board = boardService.getEntityById(boardId);

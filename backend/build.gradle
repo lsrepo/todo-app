@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.5.10'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.asciidoctor.jvm.convert' version '4.0.5'
+	id 'jacoco'
 }
 
 group = 'com.pak'
@@ -90,4 +91,33 @@ tasks.named('check') {
 tasks.named('asciidoctor') {
 	inputs.dir snippetsDir
 	dependsOn test
+}
+
+jacoco {
+	toolVersion = '0.8.11'
+}
+
+tasks.named('test') {
+	finalizedBy tasks.named('jacocoTestReport')
+}
+
+def jacocoExclude = [
+	'**/com/pak/todo/domain/**',              // domain commands, event payloads
+	'**/com/pak/todo/model/dto/**',           // request/response DTOs
+	'**/com/pak/todo/model/entity/**',        // JPA entities
+	'**/com/pak/todo/model/enums/**',         // enums
+	'**/com/pak/todo/web/error/ErrorResponse*.class',
+	'**/com/pak/todo/web/error/ResourceNotFoundException*.class'
+]
+
+tasks.named('jacocoTestReport', JacocoReport) {
+	reports {
+		xml.required = true
+		html.required = true
+		html.outputLocation = layout.buildDirectory.dir('reports/jacoco/test/html')
+	}
+	// Exclude data classes and DTOs that have no business logic
+	classDirectories.setFrom(files(sourceSets.main.output.classesDirs.files.collect {
+		fileTree(dir: it, exclude: jacocoExclude)
+	}))
 }
