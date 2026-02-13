@@ -1,11 +1,15 @@
 package com.pak.todo.model.entity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +40,10 @@ public class Board {
 
 	@Column(nullable = false)
 	private Instant updatedAt;
+
+	@OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE)
+	@Builder.Default
+	private List<Permission> permissions = new ArrayList<>();
 
 	public static Board create(UUID id, String name, String description) {
 		Instant now = Instant.now();

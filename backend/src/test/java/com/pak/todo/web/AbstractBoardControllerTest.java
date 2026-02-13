@@ -8,11 +8,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.pak.todo.auth.AuthorizationService;
-import com.pak.todo.command.CreateBoardCommandHandler;
 import com.pak.todo.command.DeleteBoardCommandHandler;
 import com.pak.todo.command.UpdateBoardCommandHandler;
 import com.pak.todo.security.CurrentUserService;
 import com.pak.todo.security.JwtAuthenticationFilter;
+import com.pak.todo.service.BoardCreationService;
 import com.pak.todo.service.BoardService;
 import com.pak.todo.web.command.BoardCommandFactory;
 import com.pak.todo.web.error.GlobalExceptionHandler;
@@ -32,7 +32,7 @@ abstract class AbstractBoardControllerTest {
 	protected BoardCommandFactory boardCommandFactory;
 
 	@MockBean
-	protected CreateBoardCommandHandler createBoardCommandHandler;
+	protected BoardCreationService boardCreationService;
 
 	@MockBean
 	protected UpdateBoardCommandHandler updateBoardCommandHandler;

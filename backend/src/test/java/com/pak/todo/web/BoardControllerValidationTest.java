@@ -29,7 +29,7 @@ class BoardControllerValidationTest extends AbstractBoardControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("name"))
 				.andExpect(jsonPath("$.errors[0].message").value("name is required"));
 
-		verifyNoInteractions(createBoardCommandHandler);
+		verifyNoInteractions(boardCreationService);
 	}
 
 	// Scenario: creating a board with description longer than allowed
@@ -49,6 +49,6 @@ class BoardControllerValidationTest extends AbstractBoardControllerTest {
 				.andExpect(jsonPath("$.message").value("Validation failed"))
 				.andExpect(jsonPath("$.errors[0].field").value("description"));
 
-		verifyNoInteractions(createBoardCommandHandler);
+		verifyNoInteractions(boardCreationService);
 	}
 }

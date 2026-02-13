@@ -52,6 +52,14 @@ From the `backend` directory:
 
 The API is documented in Swagger when the app is running: [Swagger UI](http://localhost:8088/swagger-ui.html), [OpenAPI JSON](http://localhost:8088/v3/api-docs). You can import the OpenAPI JSON into Postman to get a collection.
 
+### Swagger UI: login and attaching the access token
+
+Protected endpoints require a JWT in the `Authorization` header. In Swagger UI:
+
+1. **Login**: Open the **Auth** section, expand **POST /api/login**, click **Try it out**, enter a username and password (e.g. `user1` / `password` from the seeder), then **Execute**. Copy the `token` from the response body.
+2. **Authorize**: Click the **Authorize** button (lock icon) at the top of the page. Paste the token into the **bearer-jwt** field (paste only the token, not `Bearer `). Click **Authorize**, then **Close**.
+3. **Call protected APIs**: All subsequent requests (e.g. GET /api/boards, GET /api/boards/{id}) will automatically include `Authorization: Bearer <token>` in the request headers.
+
 ## WebSocket board stream
 
 - **Endpoint**: `ws://localhost:8088/ws/board/{boardId}`
@@ -69,9 +77,6 @@ The API is documented in Swagger when the app is running: [Swagger UI](http://lo
   - `key`: typically the main field of interest (for tasks, `status` when present; otherwise `name`; for boards, `name`).
   - `value`: the new value for that field, with `;` and `=` escaped as `\;` and `\=`.
 
-## TODO in the future
-
-- Set up indices (e.g. for `outbox`, boards, tasks as needed).
 
 ## Design
 

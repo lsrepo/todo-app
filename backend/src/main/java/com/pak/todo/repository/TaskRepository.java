@@ -17,4 +17,6 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificat
 	Page<Task> findAllByBoardId(UUID boardId, Pageable pageable);
 
 	boolean existsByIdAndBoardId(UUID taskId, UUID boardId);
+
+	void deleteByBoard_Id(UUID boardId);
 }

@@ -21,17 +21,17 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pak.todo.auth.AuthorizationService;
-import com.pak.todo.command.CreateBoardCommandHandler;
 import com.pak.todo.command.DeleteBoardCommandHandler;
 import com.pak.todo.command.UpdateBoardCommandHandler;
 import com.pak.todo.model.dto.BoardCreateRequest;
 import com.pak.todo.model.dto.BoardResponse;
 import com.pak.todo.model.dto.BoardUpdateRequest;
-import com.pak.todo.web.command.BoardCommandFactory;
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.User;
 import com.pak.todo.security.CurrentUserService;
+import com.pak.todo.service.BoardCreationService;
 import com.pak.todo.service.BoardService;
+import com.pak.todo.web.command.BoardCommandFactory;
 import com.pak.todo.web.error.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -44,8 +44,8 @@ import lombok.RequiredArgsConstructor;
 public class BoardController {
 
 	private final BoardService boardService;
+	private final BoardCreationService boardCreationService;
 	private final BoardCommandFactory boardCommandFactory;
-	private final CreateBoardCommandHandler createBoardCommandHandler;
 	private final UpdateBoardCommandHandler updateBoardCommandHandler;
 	private final DeleteBoardCommandHandler deleteBoardCommandHandler;
 	private final AuthorizationService authorizationService;
@@ -86,13 +86,7 @@ public class BoardController {
 	})
 	@PostMapping
 	public ResponseEntity<BoardResponse> create(@Valid @RequestBody BoardCreateRequest request) {
-		User currentUser = currentUserService.getCurrentUserOrThrow();
-
-		BoardResponse response = createBoardCommandHandler.handle(boardCommandFactory.createBoard(request));
-		Board createdBoard = boardService.getEntityById(response.getId());
-		if (createdBoard != null) {
-			authorizationService.grantOwnerIfMissing(currentUser, createdBoard);
-		}
+		BoardResponse response = boardCreationService.createBoardWithOwner(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 

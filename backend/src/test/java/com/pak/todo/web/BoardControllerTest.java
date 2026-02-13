@@ -19,7 +19,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 
-import com.pak.todo.domain.command.CreateBoardCommand;
 import com.pak.todo.model.dto.BoardResponse;
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.User;
@@ -108,12 +107,11 @@ class BoardControllerTest extends AbstractBoardControllerTest {
 	}
 
 	// Scenario: creating a board with valid request returns 201 and body
-	// Given: current user and create handler return BoardResponse
+	// Given: BoardCreationService returns BoardResponse for the request
 	// When: POST /api/boards with valid JSON is called
 	// Then: the response is 201 Created with board body
 	@Test
 	void create_validRequest_returns201AndBody() throws Exception {
-		User user = User.create(UUID.randomUUID(), "user", "hash");
 		UUID boardId = UUID.randomUUID();
 		BoardResponse response = BoardResponse.builder()
 				.id(boardId)
@@ -122,12 +120,7 @@ class BoardControllerTest extends AbstractBoardControllerTest {
 				.createdAt(Instant.now())
 				.updatedAt(Instant.now())
 				.build();
-		Board createdBoard = Board.create(boardId, "New Board", "Desc");
-		when(currentUserService.getCurrentUserOrThrow()).thenReturn(user);
-		when(boardCommandFactory.createBoard(any())).thenReturn(
-				CreateBoardCommand.builder().boardId(boardId).name("New Board").description("Desc").build());
-		when(createBoardCommandHandler.handle(any())).thenReturn(response);
-		when(boardService.getEntityById(boardId)).thenReturn(createdBoard);
+		when(boardCreationService.createBoardWithOwner(any())).thenReturn(response);
 
 		mockMvc.perform(post("/api/boards")
 						.contentType(MediaType.APPLICATION_JSON)

@@ -1,6 +1,6 @@
 # TODO Application — Product Overview
 
-A board-centric TODO application for teams: users manage tasks on shared boards with role-based access and see changes in real time. A web UI is available for testing the application; it is still under development.
+A board-centric TODO application for teams: users manage tasks on shared boards with role-based access and see changes in real time. A web UI is available for testing the application; the UI is **incomplete** and still under development.
 
 ---
 
@@ -53,6 +53,12 @@ The application runs in Docker; the backend and supporting services (database, e
 ```
 
 The UI talks to the server over HTTP (for loading and saving data and for login) and over a bidirectional WebSocket (for live updates). The server writes to the database; a change-data capture (CDC) process streams those changes into an event bus; the server consumes events and pushes them to the right WebSocket clients so everyone viewing a board stays in sync.
+
+---
+
+## Future features
+
+- **Invitation** — Send a link to invite someone to edit the board. Recipients can join as editors (or with a chosen role) without being added manually by the owner.
 
 ---
 

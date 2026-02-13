@@ -7,13 +7,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.pak.todo.auth.AuthorizationService;
-import com.pak.todo.command.CreateBoardCommandHandler;
 import com.pak.todo.domain.command.CreateBoardCommand;
-import com.pak.todo.model.dto.BoardResponse;
-import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.User;
-import com.pak.todo.service.BoardService;
+import com.pak.todo.service.BoardCreationService;
 import com.pak.todo.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,9 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class DatabaseSeeder implements CommandLineRunner {
 
 	private final UserService userService;
-	private final BoardService boardService;
-	private final CreateBoardCommandHandler createBoardCommandHandler;
-	private final AuthorizationService authorizationService;
+	private final BoardCreationService boardCreationService;
 
 	@Override
 	@Transactional
@@ -52,12 +46,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 					.name(user.getUsername() + "'s board")
 					.description("Default board for " + user.getUsername())
 					.build();
-
-			BoardResponse response = createBoardCommandHandler.handle(command);
-			Board board = boardService.getEntityById(response.getId());
-			if (board != null) {
-				authorizationService.grantOwnerIfMissing(user, board);
-			}
+			boardCreationService.createBoardWithOwner(user, command);
 		}
 	}
 }

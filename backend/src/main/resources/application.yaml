@@ -35,13 +35,5 @@ security:
   jwt:
     # Development-only secret key. Must be at least 256 bits for HS256.
     secret: "change-me-in-production-change-me-in-production-1234"
-    expiration-seconds: 2592000
+    expiration-seconds: 2592000 # 30 days (for development purposes)
     issuer: "todo-app"
----
-spring:
-  config:
-    activate:
-      on-profile: test
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
