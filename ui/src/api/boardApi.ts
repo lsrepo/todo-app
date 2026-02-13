@@ -67,3 +67,15 @@ export async function updateTask(
   );
 }
 
+export async function deleteTask(
+  boardId: string,
+  taskId: string,
+  token: string
+): Promise<void> {
+  return apiFetch<void>(
+    `/boards/${boardId}/tasks/${taskId}`,
+    { method: "DELETE" },
+    token
+  );
+}
+

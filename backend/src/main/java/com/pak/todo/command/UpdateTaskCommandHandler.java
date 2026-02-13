@@ -1,7 +1,6 @@
 package com.pak.todo.command;
 
 import com.pak.todo.domain.command.UpdateTaskCommand;
-import com.pak.todo.domain.event.TaskEventPayload;
 import com.pak.todo.model.dto.TaskResponse;
 import com.pak.todo.model.entity.Task;
 import com.pak.todo.model.mapper.TaskMapper;
@@ -25,8 +24,12 @@ public class UpdateTaskCommandHandler {
 		Task task = taskRepository.findByIdAndBoardId(command.getTaskId(), command.getBoardId()).orElse(null);
 		if (task == null) return null;
 
-		task.setName(command.getName());
-		task.setDescription(command.getDescription());
+		if (command.getName() != null) {
+			task.setName(command.getName());
+		}
+		if (command.getDescription() != null) {
+			task.setDescription(command.getDescription());
+		}
 		task.setDueDate(command.getDueDate());
 		if (command.getStatus() != null) {
 			task.setStatus(command.getStatus());
@@ -34,19 +37,7 @@ public class UpdateTaskCommandHandler {
 		task.setUpdatedAt(Instant.now());
 		taskRepository.save(task);
 
-		TaskEventPayload payload = TaskEventPayload.builder()
-				.id(task.getId())
-				.boardId(task.getBoard().getId())
-				.name(task.getName())
-				.description(task.getDescription())
-				.dueDate(task.getDueDate())
-				.status(task.getStatus())
-				.createdAt(task.getCreatedAt())
-				.updatedAt(task.getUpdatedAt())
-				.eventType("TaskUpdated")
-				.occurredAt(Instant.now())
-				.build();
-		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskUpdated", task.getBoard().getId(), payload);
+		outboxSupport.saveOutbox("Task", task.getId().toString(), "TaskUpdated", task.getBoard().getId(), command.getPayload());
 
 		return taskMapper.toResponse(task);
 	}

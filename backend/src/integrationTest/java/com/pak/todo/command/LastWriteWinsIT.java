@@ -17,6 +17,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,20 +70,38 @@ class LastWriteWinsIT {
 				new CreateTaskCommand(taskId, boardId, "Initial", "Initial desc", dueDate, TaskStatus.NOT_STARTED)
 		);
 
-		UpdateTaskCommand first = new UpdateTaskCommand(
-				boardId, taskId,
-				"First", "first desc",
-				dueDate.plus(1, java.time.temporal.ChronoUnit.DAYS),
-				TaskStatus.IN_PROGRESS
-		);
+		Instant firstDue = dueDate.plus(1, java.time.temporal.ChronoUnit.DAYS);
+		Map<String, Object> firstPayload = new LinkedHashMap<>();
+		firstPayload.put("name", "First");
+		firstPayload.put("description", "first desc");
+		firstPayload.put("dueDate", firstDue);
+		firstPayload.put("status", TaskStatus.IN_PROGRESS);
+		UpdateTaskCommand first = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name("First")
+				.description("first desc")
+				.dueDate(firstDue)
+				.status(TaskStatus.IN_PROGRESS)
+				.payload(firstPayload)
+				.build();
 		updateTaskCommandHandler.handle(first);
 
-		UpdateTaskCommand second = new UpdateTaskCommand(
-				boardId, taskId,
-				"Second", "second desc",
-				dueDate.plus(2, java.time.temporal.ChronoUnit.DAYS),
-				TaskStatus.COMPLETED
-		);
+		Instant secondDue = dueDate.plus(2, java.time.temporal.ChronoUnit.DAYS);
+		Map<String, Object> secondPayload = new LinkedHashMap<>();
+		secondPayload.put("name", "Second");
+		secondPayload.put("description", "second desc");
+		secondPayload.put("dueDate", secondDue);
+		secondPayload.put("status", TaskStatus.COMPLETED);
+		UpdateTaskCommand second = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name("Second")
+				.description("second desc")
+				.dueDate(secondDue)
+				.status(TaskStatus.COMPLETED)
+				.payload(secondPayload)
+				.build();
 		updateTaskCommandHandler.handle(second);
 
 		Task task = taskRepository.findByIdAndBoardId(taskId, boardId).orElseThrow();

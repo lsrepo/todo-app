@@ -2,6 +2,8 @@ package com.pak.todo.command;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,7 +19,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.pak.todo.domain.command.UpdateTaskCommand;
-import com.pak.todo.domain.event.TaskEventPayload;
 import com.pak.todo.model.dto.TaskResponse;
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.Task;
@@ -60,14 +61,21 @@ class UpdateTaskCommandHandlerTest {
 
 		when(taskRepository.findByIdAndBoardId(taskId, boardId)).thenReturn(Optional.of(existing));
 
-		UpdateTaskCommand command = new UpdateTaskCommand(
-				boardId,
-				taskId,
-				"new-name",
-				"new-desc",
-				Instant.now().plus(2, ChronoUnit.DAYS),
-				TaskStatus.IN_PROGRESS
-		);
+		Instant newDueDate = Instant.now().plus(2, ChronoUnit.DAYS);
+		Map<String, Object> payload = new LinkedHashMap<>();
+		payload.put("name", "new-name");
+		payload.put("description", "new-desc");
+		payload.put("dueDate", newDueDate);
+		payload.put("status", TaskStatus.IN_PROGRESS);
+		UpdateTaskCommand command = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name("new-name")
+				.description("new-desc")
+				.dueDate(newDueDate)
+				.status(TaskStatus.IN_PROGRESS)
+				.payload(payload)
+				.build();
 
 		TaskResponse mappedResponse = new TaskResponse(
 				taskId,
@@ -94,7 +102,8 @@ class UpdateTaskCommandHandlerTest {
 		assertThat(existing.getUpdatedAt()).isNotNull();
 		assertThat(existing.getUpdatedAt()).isAfterOrEqualTo(originalUpdatedAt);
 
-		ArgumentCaptor<TaskEventPayload> payloadCaptor = ArgumentCaptor.forClass(TaskEventPayload.class);
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 		verify(outboxSupport).saveOutbox(
 				eq("Task"),
 				eq(taskId.toString()),
@@ -103,17 +112,12 @@ class UpdateTaskCommandHandlerTest {
 				payloadCaptor.capture()
 		);
 
-		TaskEventPayload payload = payloadCaptor.getValue();
-		assertThat(payload.getId()).isEqualTo(taskId);
-		assertThat(payload.getBoardId()).isEqualTo(boardId);
-		assertThat(payload.getName()).isEqualTo(command.getName());
-		assertThat(payload.getDescription()).isEqualTo(command.getDescription());
-		assertThat(payload.getDueDate()).isEqualTo(command.getDueDate());
-		assertThat(payload.getStatus()).isEqualTo(command.getStatus());
-		assertThat(payload.getCreatedAt()).isEqualTo(originalCreatedAt);
-		assertThat(payload.getUpdatedAt()).isEqualTo(existing.getUpdatedAt());
-		assertThat(payload.getEventType()).isEqualTo("TaskUpdated");
-		assertThat(payload.getOccurredAt()).isNotNull();
+		Map<String, Object> savedPayload = payloadCaptor.getValue();
+		assertThat(savedPayload).containsEntry("name", "new-name");
+		assertThat(savedPayload).containsEntry("description", "new-desc");
+		assertThat(savedPayload).containsEntry("dueDate", newDueDate);
+		assertThat(savedPayload).containsEntry("status", TaskStatus.IN_PROGRESS);
+		assertThat(savedPayload).hasSize(4);
 	}
 
 	// Scenario: null status should not override existing status
@@ -148,14 +152,20 @@ class UpdateTaskCommandHandlerTest {
 
 		when(taskRepository.findByIdAndBoardId(taskId, boardId)).thenReturn(Optional.of(existing));
 
-		UpdateTaskCommand command = new UpdateTaskCommand(
-				boardId,
-				taskId,
-				"new-name",
-				"new-desc",
-				Instant.now().plus(2, ChronoUnit.DAYS),
-				null
-		);
+		Instant newDueDate = Instant.now().plus(2, ChronoUnit.DAYS);
+		Map<String, Object> payload = new LinkedHashMap<>();
+		payload.put("name", "new-name");
+		payload.put("description", "new-desc");
+		payload.put("dueDate", newDueDate);
+		UpdateTaskCommand command = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name("new-name")
+				.description("new-desc")
+				.dueDate(newDueDate)
+				.status(null)
+				.payload(payload)
+				.build();
 
 		when(taskMapper.toResponse(existing)).thenReturn(Mockito.mock(TaskResponse.class));
 
@@ -189,14 +199,18 @@ class UpdateTaskCommandHandlerTest {
 
 		when(taskRepository.findByIdAndBoardId(taskId, boardId)).thenReturn(Optional.empty());
 
-		UpdateTaskCommand command = new UpdateTaskCommand(
-				boardId,
-				taskId,
-				"new-name",
-				"new-desc",
-				Instant.now().plus(2, ChronoUnit.DAYS),
-				TaskStatus.NOT_STARTED
-		);
+		Map<String, Object> payload = new LinkedHashMap<>();
+		payload.put("name", "new-name");
+		payload.put("description", "new-desc");
+		UpdateTaskCommand command = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name("new-name")
+				.description("new-desc")
+				.dueDate(Instant.now().plus(2, ChronoUnit.DAYS))
+				.status(TaskStatus.NOT_STARTED)
+				.payload(payload)
+				.build();
 
 		TaskResponse result = handler.handle(command);
 
@@ -204,6 +218,124 @@ class UpdateTaskCommandHandlerTest {
 		verify(taskRepository, never()).save(any());
 		verifyNoInteractions(taskMapper);
 		verify(outboxSupport, never()).saveOutbox(any(), any(), any(), any(), any());
+	}
+
+	// Scenario: when name is null in the command, existing task name is not overwritten
+	// Given: an UpdateTaskCommand with name = null for an existing task
+	// When: handle() is called
+	// Then: task name remains unchanged, other fields (description, dueDate, status) are updated
+	@Test
+	void handle_nullName_doesNotOverwriteExistingName() {
+		TaskRepository taskRepository = Mockito.mock(TaskRepository.class);
+		TaskMapper taskMapper = Mockito.mock(TaskMapper.class);
+		OutboxSupport outboxSupport = Mockito.mock(OutboxSupport.class);
+
+		UpdateTaskCommandHandler handler = new UpdateTaskCommandHandler(
+				taskRepository,
+				taskMapper,
+				outboxSupport
+		);
+
+		UUID boardId = UUID.randomUUID();
+		UUID taskId = UUID.randomUUID();
+		Board board = Board.create(boardId, "board", "desc");
+
+		Task existing = Task.create(
+				taskId,
+				board,
+				"original-name",
+				"old-desc",
+				Instant.now().plus(1, ChronoUnit.DAYS),
+				TaskStatus.NOT_STARTED
+		);
+		String originalName = existing.getName();
+
+		when(taskRepository.findByIdAndBoardId(taskId, boardId)).thenReturn(Optional.of(existing));
+
+		Instant newDueDate = Instant.now().plus(2, ChronoUnit.DAYS);
+		Map<String, Object> payload = new LinkedHashMap<>();
+		payload.put("description", "new-desc");
+		payload.put("dueDate", newDueDate);
+		payload.put("status", TaskStatus.IN_PROGRESS);
+		UpdateTaskCommand command = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name(null)
+				.description("new-desc")
+				.dueDate(newDueDate)
+				.status(TaskStatus.IN_PROGRESS)
+				.payload(payload)
+				.build();
+
+		when(taskMapper.toResponse(existing)).thenReturn(Mockito.mock(TaskResponse.class));
+
+		handler.handle(command);
+
+		verify(taskRepository).save(existing);
+		assertThat(existing.getName()).isEqualTo(originalName);
+		assertThat(existing.getDescription()).isEqualTo("new-desc");
+		assertThat(existing.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+	}
+
+	// Scenario: when only dueDate is updated, outbox payload contains only dueDate
+	// Given: an UpdateTaskCommand with only dueDate set in the payload
+	// When: handle() is called
+	// Then: the outbox is saved with payload containing only dueDate
+	@Test
+	void handle_onlyDueDateInPayload_savesDueDateOnlyToOutbox() {
+		TaskRepository taskRepository = Mockito.mock(TaskRepository.class);
+		TaskMapper taskMapper = Mockito.mock(TaskMapper.class);
+		OutboxSupport outboxSupport = Mockito.mock(OutboxSupport.class);
+
+		UpdateTaskCommandHandler handler = new UpdateTaskCommandHandler(
+				taskRepository,
+				taskMapper,
+				outboxSupport
+		);
+
+		UUID boardId = UUID.randomUUID();
+		UUID taskId = UUID.randomUUID();
+		Board board = Board.create(boardId, "board", "desc");
+		Task existing = Task.create(
+				taskId,
+				board,
+				"task-name",
+				"desc",
+				Instant.now().plus(1, ChronoUnit.DAYS),
+				TaskStatus.NOT_STARTED
+		);
+
+		when(taskRepository.findByIdAndBoardId(taskId, boardId)).thenReturn(Optional.of(existing));
+
+		Instant newDueDate = Instant.parse("2022-11-11T00:00:00Z");
+		Map<String, Object> payload = new LinkedHashMap<>();
+		payload.put("dueDate", newDueDate);
+		UpdateTaskCommand command = UpdateTaskCommand.builder()
+				.boardId(boardId)
+				.taskId(taskId)
+				.name(null)
+				.description(null)
+				.dueDate(newDueDate)
+				.status(null)
+				.payload(payload)
+				.build();
+
+		when(taskMapper.toResponse(existing)).thenReturn(Mockito.mock(TaskResponse.class));
+
+		handler.handle(command);
+
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+		verify(outboxSupport).saveOutbox(
+				eq("Task"),
+				eq(taskId.toString()),
+				eq("TaskUpdated"),
+				eq(boardId),
+				payloadCaptor.capture()
+		);
+		Map<String, Object> savedPayload = payloadCaptor.getValue();
+		assertThat(savedPayload).containsOnlyKeys("dueDate");
+		assertThat(savedPayload.get("dueDate")).isEqualTo(newDueDate);
 	}
 }
 

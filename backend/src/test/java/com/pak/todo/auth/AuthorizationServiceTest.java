@@ -1,16 +1,15 @@
 package com.pak.todo.auth;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.Optional;
-import java.util.UUID;
-
-import org.junit.jupiter.api.Test;
 
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.Permission;

@@ -1,6 +1,7 @@
 package com.pak.todo.domain.command;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import com.pak.todo.model.enums.TaskStatus;
@@ -22,4 +23,5 @@ public class UpdateTaskCommand {
 	private String description;
 	private Instant dueDate;
 	private TaskStatus status;
+	private Map<String, Object> payload;
 }

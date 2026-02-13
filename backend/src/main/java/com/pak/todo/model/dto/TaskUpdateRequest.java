@@ -1,7 +1,7 @@
 package com.pak.todo.model.dto;
 
 import com.pak.todo.model.enums.TaskStatus;
-import jakarta.validation.constraints.NotBlank;
+import com.pak.todo.model.validation.NotBlankWhenPresent;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import java.time.Instant;
 @Builder
 public class TaskUpdateRequest {
 
-	@NotBlank(message = "name is required")
+	@NotBlankWhenPresent(message = "name cannot be blank")
 	@Size(max = 255)
 	private String name;
 

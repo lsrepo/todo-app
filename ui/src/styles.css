@@ -95,6 +95,11 @@ a {
   gap: 8px;
 }
 
+.column.column--over {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+}
+
 .column-header {
   display: flex;
   justify-content: space-between;
@@ -119,16 +124,112 @@ a {
 }
 
 .task-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 10px;
   border-radius: 8px;
   background: #020617;
   border: 1px solid #1f2937;
-  cursor: pointer;
+  cursor: grab;
   font-size: 14px;
+}
+
+.task-card--dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.task-card--overlay {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .task-card:hover {
   border-color: #4b5563;
+}
+
+.task-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-card-content {
+  font-size: 14px;
+}
+
+.task-card-due-row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.task-due-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s, background 0.15s;
+}
+
+.task-due-btn:hover {
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.task-due-input {
+  width: 100%;
+  max-width: 120px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #020617;
+  color: #e5e7eb;
+  font-size: 12px;
+}
+
+.task-due-input::placeholder {
+  color: #6b7280;
+}
+
+.task-due-input:focus {
+  outline: none;
+  border-color: #4b5563;
+}
+
+.task-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.task-delete-btn:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.task-delete-btn:focus-visible {
+  outline: 2px solid #f87171;
+  outline-offset: 2px;
 }
 
 .task-input {

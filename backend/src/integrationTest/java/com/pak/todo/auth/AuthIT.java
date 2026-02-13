@@ -1,8 +1,6 @@
 package com.pak.todo.auth;
 
 import com.pak.todo.model.dto.BoardResponse;
-import com.pak.todo.model.dto.LoginRequest;
-import com.pak.todo.model.dto.LoginResponse;
 import com.pak.todo.model.entity.Board;
 import com.pak.todo.model.entity.Permission;
 import com.pak.todo.model.entity.User;
@@ -34,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-class AuthIntegrationTest {
+class AuthIT {
 
 	@Autowired
 	private TestRestTemplate restTemplate;

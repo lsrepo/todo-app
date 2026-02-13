@@ -1,9 +1,24 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent
+} from "@dnd-kit/core";
 import type { Board, Task, TaskStatus } from "../api/types";
-import { getBoard, getTasks, createTask, updateTask } from "../api/boardApi";
+import { getBoard, getTasks, createTask, updateTask, deleteTask } from "../api/boardApi";
 import { useBoardWebSocket, OutboxMessage } from "../hooks/useBoardWebSocket";
 import { TaskColumn } from "./TaskColumn";
+
+const VALID_STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "COMPLETED"];
+
+function isValidStatus(id: unknown): id is TaskStatus {
+  return typeof id === "string" && VALID_STATUSES.includes(id as TaskStatus);
+}
 
 interface BoardPageProps {
   token: string | null;
@@ -16,6 +31,7 @@ export function BoardPage({ token, onWebSocketStatusChange }: BoardPageProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const loadData = useCallback(async () => {
     if (!boardId || !token) {
@@ -57,12 +73,28 @@ export function BoardPage({ token, onWebSocketStatusChange }: BoardPageProps) {
               if (msg.key === "name") {
                 return { ...t, name: msg.value };
               }
+              if (msg.key === "dueDate") {
+                return { ...t, dueDate: msg.value || null };
+              }
+              if (msg.key === "description") {
+                return { ...t, description: msg.value };
+              }
               return t;
             });
           }
-          // For create, keep it simple and just reload tasks.
           if (msg.type === "create") {
-            void loadData();
+            if (prev.some((t) => t.id === msg.id)) return prev;
+            if (!boardId) return prev;
+            const now = new Date().toISOString();
+            const newTask: Task = {
+              id: msg.id,
+              boardId,
+              name: msg.key === "name" ? msg.value : "New task",
+              status: (msg.key === "status" ? msg.value : "NOT_STARTED") as TaskStatus,
+              createdAt: now,
+              updatedAt: now
+            };
+            return [...prev, newTask];
           }
           return prev;
         });
@@ -70,7 +102,7 @@ export function BoardPage({ token, onWebSocketStatusChange }: BoardPageProps) {
         setBoard((prev) => (prev ? { ...prev, name: msg.value } : prev));
       }
     },
-    [loadData]
+    [boardId]
   );
 
   const { connected } = useBoardWebSocket(boardId, token, handleWsMessage);
@@ -108,6 +140,64 @@ export function BoardPage({ token, onWebSocketStatusChange }: BoardPageProps) {
     setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
   };
 
+  const handleUpdateTaskDueDate = async (taskId: string, dueDate: string | null) => {
+    if (!boardId || !token) return;
+    const updated = await updateTask(boardId, taskId, token, { dueDate });
+    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!boardId || !token) return;
+    await deleteTask(boardId, taskId, token);
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+  };
+
+  const handleUpdateTaskStatus = useCallback(
+    async (taskId: string, newStatus: TaskStatus) => {
+      if (!boardId || !token) return;
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || task.status === newStatus) return;
+      const previousTasks = tasks;
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      );
+      try {
+        await updateTask(boardId, taskId, token, { status: newStatus });
+      } catch {
+        setTasks(previousTasks);
+      }
+    },
+    [boardId, token, tasks]
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }
+    })
+  );
+
+  const onDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const task =
+        (event.active.data.current?.task as Task | undefined) ??
+        tasks.find((t) => t.id === event.active.id) ??
+        null;
+      setActiveTask(task);
+    },
+    [tasks]
+  );
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveTask(null);
+      const { active, over } = event;
+      if (!over || !isValidStatus(over.id)) return;
+      const taskId = String(active.id);
+      handleUpdateTaskStatus(taskId, over.id);
+    },
+    [handleUpdateTaskStatus]
+  );
+
   if (!boardId) {
     return (
       <div className="board-container">
@@ -140,29 +230,50 @@ export function BoardPage({ token, onWebSocketStatusChange }: BoardPageProps) {
         </div>
       </div>
 
-      <div className="columns">
-        <TaskColumn
-          title="Not started"
-          status="NOT_STARTED"
-          tasks={grouped.NOT_STARTED}
-          onCreateTask={handleCreateTask}
-          onUpdateTaskName={handleUpdateTaskName}
-        />
-        <TaskColumn
-          title="In progress"
-          status="IN_PROGRESS"
-          tasks={grouped.IN_PROGRESS}
-          onCreateTask={handleCreateTask}
-          onUpdateTaskName={handleUpdateTaskName}
-        />
-        <TaskColumn
-          title="Done"
-          status="COMPLETED"
-          tasks={grouped.COMPLETED}
-          onCreateTask={handleCreateTask}
-          onUpdateTaskName={handleUpdateTaskName}
-        />
-      </div>
+      <DndContext
+        sensors={sensors}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      >
+        <div className="columns">
+          <TaskColumn
+            title="Not started"
+            status="NOT_STARTED"
+            tasks={grouped.NOT_STARTED}
+            onCreateTask={handleCreateTask}
+            onUpdateTaskName={handleUpdateTaskName}
+            onUpdateTaskDueDate={handleUpdateTaskDueDate}
+            onDeleteTask={handleDeleteTask}
+          />
+          <TaskColumn
+            title="In progress"
+            status="IN_PROGRESS"
+            tasks={grouped.IN_PROGRESS}
+            onCreateTask={handleCreateTask}
+            onUpdateTaskName={handleUpdateTaskName}
+            onUpdateTaskDueDate={handleUpdateTaskDueDate}
+            onDeleteTask={handleDeleteTask}
+          />
+          <TaskColumn
+            title="Done"
+            status="COMPLETED"
+            tasks={grouped.COMPLETED}
+            onCreateTask={handleCreateTask}
+            onUpdateTaskName={handleUpdateTaskName}
+            onUpdateTaskDueDate={handleUpdateTaskDueDate}
+            onDeleteTask={handleDeleteTask}
+          />
+        </div>
+        <DragOverlay>
+          {activeTask ? (
+            <div className="task-card task-card--overlay">
+              <div className="task-card-body">
+                <div className="task-card-content">{activeTask.name}</div>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

@@ -35,8 +35,22 @@ public class OutboxMessageFormatter {
 				}
 				else {
 					JsonNode nameNode = payloadNode.get("name");
-					key = "name";
-					value = nameNode != null ? nameNode.asText("") : "";
+					if (nameNode != null && !nameNode.isNull()) {
+						key = "name";
+						value = nameNode.asText("");
+					}
+					else {
+						JsonNode dueDateNode = payloadNode.get("dueDate");
+						if (dueDateNode != null && !dueDateNode.isNull()) {
+							key = "dueDate";
+							value = dueDateNode.asText("");
+						}
+						else {
+							JsonNode descNode = payloadNode.get("description");
+							key = "description";
+							value = descNode != null ? descNode.asText("") : "";
+						}
+					}
 				}
 			}
 			else {

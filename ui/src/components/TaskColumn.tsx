@@ -1,4 +1,5 @@
 import { useState, KeyboardEvent } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import type { Task, TaskStatus } from "../api/types";
 import { TaskCard } from "./TaskCard";
 
@@ -8,6 +9,8 @@ interface TaskColumnProps {
   tasks: Task[];
   onCreateTask: (name: string, status: TaskStatus) => Promise<void>;
   onUpdateTaskName: (taskId: string, name: string) => Promise<void>;
+  onUpdateTaskDueDate: (taskId: string, dueDate: string | null) => Promise<void>;
+  onDeleteTask: (taskId: string) => Promise<void>;
 }
 
 export function TaskColumn({
@@ -15,10 +18,13 @@ export function TaskColumn({
   status,
   tasks,
   onCreateTask,
-  onUpdateTaskName
+  onUpdateTaskName,
+  onUpdateTaskDueDate,
+  onDeleteTask
 }: TaskColumnProps) {
   const [draft, setDraft] = useState("");
   const [creating, setCreating] = useState(false);
+  const { setNodeRef, isOver, ...attributes } = useDroppable({ id: status });
 
   const handleCreate = async () => {
     const trimmed = draft.trim();
@@ -40,7 +46,11 @@ export function TaskColumn({
   };
 
   return (
-    <div className="column">
+    <div
+      ref={setNodeRef}
+      className={`column${isOver ? " column--over" : ""}`}
+      {...attributes}
+    >
       <div className="column-header">
         <div className="column-title">{title}</div>
         <div className="column-count">{tasks.length}</div>
@@ -51,6 +61,8 @@ export function TaskColumn({
             key={task.id}
             task={task}
             onSaveName={(name) => onUpdateTaskName(task.id, name)}
+            onSaveDueDate={(dueDate) => onUpdateTaskDueDate(task.id, dueDate)}
+            onDelete={() => onDeleteTask(task.id)}
           />
         ))}
       </div>

@@ -67,6 +67,24 @@ class OutboxMessageFormatterTest {
 		assertThat(result).contains("value=My task name");
 	}
 
+	// Scenario: task updated with only dueDate in payload
+	// Given: an OutboxEntry for Task with payload containing only dueDate
+	// When: format() is called
+	// Then: message contains key=dueDate and value equals payload dueDate
+	@Test
+	void format_taskUpdated_onlyDueDate_usesDueDateKeyAndValue() {
+		OutboxEntry entry = entry("Task", "task-789", "TaskUpdated",
+				"{\"dueDate\":\"2022-11-11T00:00:00Z\"}");
+
+		String result = formatter.format(entry);
+
+		assertThat(result).contains("type=edit");
+		assertThat(result).contains("resource=task");
+		assertThat(result).contains("id=task-789");
+		assertThat(result).contains("key=dueDate");
+		assertThat(result).contains("value=2022-11-11T00:00:00Z");
+	}
+
 	// Scenario: board updated uses name
 	// Given: an OutboxEntry for Board with event_type BoardUpdated and payload containing name
 	// When: format() is called
