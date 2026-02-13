@@ -63,11 +63,22 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
-	testImplementation 'org.testcontainers:junit-jupiter'
+
+	testImplementation platform('org.testcontainers:testcontainers-bom:2.0.2') //import bom
+
+	testImplementation 'org.testcontainers:testcontainers'
+	testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.2"
 	testImplementation 'org.testcontainers:postgresql'
 	testImplementation 'org.testcontainers:kafka'
+
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	testImplementation 'io.debezium:debezium-testing-testcontainers:3.4.1.Final'
+	testImplementation 'org.testcontainers:postgresql'
+	testImplementation("io.strimzi:strimzi-test-container:0.114.0")
+
+
 }
 
 tasks.named('test') {

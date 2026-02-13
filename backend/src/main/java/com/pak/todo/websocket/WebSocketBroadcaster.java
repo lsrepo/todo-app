@@ -46,6 +46,7 @@ public class WebSocketBroadcaster {
 		String message = outboxMessageFormatter.format(entry);
 		Set<WebSocketSession> sessions = sessionsByBoard.get(boardId);
 		if (sessions == null || sessions.isEmpty()) {
+			log.info("No WebSocket session for board {}, skipping broadcast", boardId);
 			return;
 		}
 
@@ -57,6 +58,7 @@ public class WebSocketBroadcaster {
 			}
 			try {
 				session.sendMessage(textMessage);
+				log.info("Broadcast WebSocket message to session {} (board {}): {}", session.getId(), boardId, message);
 			}
 			catch (IOException e) {
 				log.warn("Failed to send WebSocket message to session {}", session.getId(), e);
