@@ -45,7 +45,7 @@ The application runs in Docker; the backend and supporting services (database, e
                     DB   |               |
                          v               |
                     +----------+   +-----+----+
-                    | Database  |   |  Events  |
+                    | Database |   |  Events  |
                     +----+-----+   +---------+
                          |              ^
                          |   CDC        |
